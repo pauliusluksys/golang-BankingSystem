@@ -8,6 +8,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	driverMysql "gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"os"
@@ -59,15 +61,28 @@ func getDbClient() *sqlx.DB {
 	client.SetMaxIdleConns(10)
 	return client
 }
+
 func timezoneTask() {
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", "admin", "password", "127.0.0.1", "3306", "banking")
+	//dsn := fmt.Sprintf(DbUser, ":", DbPasswd, "@tcp(", DbAddress, ":", DbPort, ")/", DbName, "?charset=utf8mb4&parseTime=True&loc=Local")
+	db, err := gorm.Open(driverMysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Println("FATAL ERROR Gorm SQL DOES NOT WORK PROPERLY")
+		panic(err)
+	}
+	//migrateAll(db)
 	router := mux.NewRouter()
 	//wiring
 	dbClient := getDbClient()
+
 	customerRepositoryDb := domain.NewCustomerRepositoryDb(dbClient)
 	accountRepositoryDb := domain.NewAccountRepositoryDb(dbClient)
 	authRepositoryDb := domain.NewAuthRepository(dbClient)
 	jobRepositoryDb := domain.NewJobRepositoryDb(getDbClient())
+	jobRepositoryDbGorm := domain.NewJobRepositoryDbGorm(db)
 	jh := JobHandler{service.NewJobService(jobRepositoryDb)}
+	jhgorm := JobHandlerGorm{service.NewJobServiceGorm(jobRepositoryDbGorm)}
 	ch := CustomerHandlers{service.NewCustomerService(customerRepositoryDb)}
 	ah := AccountHandler{service.NewAccountService(accountRepositoryDb)}
 	ach := AuthHandlers{service.NewLoginService(authRepositoryDb)}
@@ -78,7 +93,10 @@ func timezoneTask() {
 	router.HandleFunc("/customers/{customer_id:[0-9]+}/account/{account_id:[0-9]+}", ah.MakeTransaction).Methods(http.MethodPost).Name("NewTransaction")
 	router.HandleFunc("/career/career-at-seb", jh.GetAllJobs).Methods(http.MethodGet).Name("GetAllJobs")
 	router.HandleFunc("/career/career-at-seb/{job_id:[0-9]+}", jh.GetById).Methods(http.MethodGet).Name("JobById")
-	router.HandleFunc("/career/career-at-seb/new", jh.NewJob).Methods(http.MethodPost).Name("NewJob")
+	router.HandleFunc("/career/career-at-seb/new", jhgorm.NewJob).Methods(http.MethodPost).Name("NewJob")
+	router.HandleFunc("/career/career-at-seb/update", jhgorm.UpdateJob).Methods(http.MethodPost).Name("UpdateJob")
+	router.HandleFunc("/career/career-at-seb/delete", jhgorm.DeleteJob).Methods(http.MethodPost).Name("DeleteJob")
+
 	router.HandleFunc("/api/time", GetTime)
 
 	am := AuthMiddleware{domain.NewAuthRepository(getDbClient())}
@@ -91,3 +109,10 @@ func timezoneTask() {
 	//}
 
 }
+
+//func migrateAll(db *gorm.DB) {
+//	err := db.AutoMigrate(&domain.JobGorm{})
+//	if err != nil {
+//		fmt.Println("error while migrating")
+//	}
+//}

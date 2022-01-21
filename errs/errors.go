@@ -30,9 +30,9 @@ func NewValidationError(message string) *AppError {
 		Code:    http.StatusUnprocessableEntity,
 	}
 }
-func NewBadRequestError(message string) *AppError {
+func GormQueryError(message string) *AppError {
 	return &AppError{
 		Message: message,
-		Code:    http.StatusBadRequest,
+		Code:    http.StatusInternalServerError,
 	}
 }

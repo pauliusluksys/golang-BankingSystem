@@ -7,27 +7,65 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 )
 
 type JobHandler struct {
 	service service.JobService
 }
+type JobHandlerGorm struct {
+	service service.JobServiceGorm
+}
 
-func (jh JobHandler) NewJob(w http.ResponseWriter, r *http.Request) {
-	var request dto.JobRequest
+func (jh JobHandlerGorm) DeleteJob(w http.ResponseWriter, r *http.Request) {
+	var request dto.JobRequestGorm
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		writeResponse(w, http.StatusBadRequest, err.Error())
 	} else {
-		request.CustomerId = customerId
-		account, appError := jh.service.NewJob(request)
+		jobDeleted, appError := jh.service.DeleteJob(request)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if appError != nil {
+			log.Println("error")
+			writeResponse(w, appError.Code, appError.Message)
+		} else {
+			//log.Println("continue on")
+			writeResponse(w, http.StatusCreated, jobDeleted)
+		}
+	}
+}
+func (jh JobHandlerGorm) UpdateJob(w http.ResponseWriter, r *http.Request) {
+	var request dto.JobRequestGorm
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		writeResponse(w, http.StatusBadRequest, err.Error())
+	} else {
+		job, appError := jh.service.UpdateJob(request)
 
 		if appError != nil {
 			writeResponse(w, appError.Code, appError.Message)
 		} else {
 			//log.Println("continue on")
-			writeResponse(w, http.StatusCreated, account)
+			writeResponse(w, http.StatusCreated, job)
+		}
+	}
+}
+func (jh JobHandlerGorm) NewJob(w http.ResponseWriter, r *http.Request) {
+	var request dto.JobRequestGorm
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		writeResponse(w, http.StatusBadRequest, err.Error())
+	} else {
+		job, appError := jh.service.NewJob(request)
+
+		if appError != nil {
+			writeResponse(w, appError.Code, appError.Message)
+		} else {
+			//log.Println("continue on")
+			writeResponse(w, http.StatusCreated, job)
 		}
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"bankingV2/dto"
 	"bankingV2/errs"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -21,6 +20,21 @@ type Job struct {
 	City         string `db:"location_name"`
 	IsExpired    bool
 }
+
+//type JobGorm struct {
+//	Id             string `db:"id"`
+//	Title          string `db:"title"`
+//	Description    string `db:"description"`
+//	ApplyUntil     string `db:"apply_until"`
+//	CategoryName   string `db:"category_title"`
+//	CategoryNameId string `db:"category_name_id"`
+//	City           string `db:"location_name"`
+//	CityId         string
+//	CreatedBy      string `db:"created_by_employee"`
+//	IsPublished    string `db:"is_published"`
+//	WhenToPublish  string `db:"when_to_publish"`
+//	IsExpired      bool
+//}
 
 func (job Job) ToDto() dto.JobResponse {
 	today := time.Now()
@@ -55,16 +69,7 @@ func (job Job) ToDto() dto.JobResponse {
 //func FilterByCategory(job Job, filter string) bool {
 //	return false
 //}
-func ReturnFilterMap(filter string) map[string]string {
-	splits := strings.Split(filter, ".")
-	field, value := splits[0], splits[1]
-	if field == "location" || field == "category" {
-		return map[string]string{field: value}
-	} else {
-		return map[string]string{}
-	}
-}
-func filterMapToDbReadableValues(filterMap map[string]string, keys []string) map[string]string {
+func filterMapToDbReadableValues(filterMap map[string]string) map[string]string {
 	// creates a new map from previous filterMap to change key values acceptable for db query
 	filterMapDb := map[string]string{}
 	for k, v := range filterMap {
