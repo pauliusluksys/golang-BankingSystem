@@ -3,6 +3,7 @@ module bankingV2
 go 1.17
 
 require (
+	github.com/bxcodec/faker/v3 v3.7.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/gorilla/mux v1.8.0

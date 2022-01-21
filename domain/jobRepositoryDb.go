@@ -34,8 +34,8 @@ func (d JobRepositoryDb) FindAll(filterMap map[string]string) ([]Job, *errs.AppE
 	jobs := make([]Job, 0)
 	var findAllSql string
 	length := len(filterMap)
-	keys := utils.GetKeys(filterMap)
-	filterMap = filterMapToDbReadableValues(filterMap, keys)
+	var keys []string
+	filterMap = filterMapToDbReadableValues(filterMap)
 	keys = utils.GetKeys(filterMap)
 	var err error
 	if length == 0 {

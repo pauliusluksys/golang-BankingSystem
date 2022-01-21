@@ -116,3 +116,6 @@ func timezoneTask() {
 //		fmt.Println("error while migrating")
 //	}
 //}
+//func executeSeeder(*sqlx.DB) {
+//	seeds.Execute(getDbClient())
+//}
