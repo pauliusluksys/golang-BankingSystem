@@ -2,6 +2,7 @@ package app
 
 import (
 	"bankingV2/domain"
+	"bankingV2/migrations"
 	"bankingV2/service"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -72,6 +73,7 @@ func timezoneTask() {
 		panic(err)
 	}
 	//migrateAll(db)
+	migrations.MigrateInvestments(db)
 	router := mux.NewRouter()
 	//wiring
 	dbClient := getDbClient()
@@ -81,8 +83,10 @@ func timezoneTask() {
 	authRepositoryDb := domain.NewAuthRepository(dbClient)
 	jobRepositoryDb := domain.NewJobRepositoryDb(getDbClient())
 	jobRepositoryDbGorm := domain.NewJobRepositoryDbGorm(db)
+	InvestmentRepositoryDbGorm := domain.NewInvestmentRepositoryDbGorm(db)
 	jh := JobHandler{service.NewJobService(jobRepositoryDb)}
 	jhgorm := JobHandlerGorm{service.NewJobServiceGorm(jobRepositoryDbGorm)}
+	ihgorm := InvestmentHandlerGorm{service.NewInvestmentServiceGorm(InvestmentRepositoryDbGorm)}
 	ch := CustomerHandlers{service.NewCustomerService(customerRepositoryDb)}
 	ah := AccountHandler{service.NewAccountService(accountRepositoryDb)}
 	ach := AuthHandlers{service.NewLoginService(authRepositoryDb)}
@@ -96,11 +100,12 @@ func timezoneTask() {
 	router.HandleFunc("/career/career-at-seb/new", jhgorm.NewJob).Methods(http.MethodPost).Name("NewJob")
 	router.HandleFunc("/career/career-at-seb/update", jhgorm.UpdateJob).Methods(http.MethodPost).Name("UpdateJob")
 	router.HandleFunc("/career/career-at-seb/delete", jhgorm.DeleteJob).Methods(http.MethodPost).Name("DeleteJob")
-
+	router.HandleFunc("/customer/possible-investments", ihgorm.GetAllInvestments).Methods(http.MethodGet).Name("GetAllInvestments")
 	router.HandleFunc("/api/time", GetTime)
 
 	am := AuthMiddleware{domain.NewAuthRepository(getDbClient())}
 	router.Use(am.authorizationHandler())
+	router.HandleFunc("/hello", Welcome).Methods(http.MethodGet).Name("Welcome")
 	router.HandleFunc("/auth/login", ach.Login).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ServerAddress, ServerPort), router))
 	//if err != nil {

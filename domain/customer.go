@@ -12,6 +12,7 @@ type Customer struct {
 	Zipcode     string
 	DateOfBirth string `db:"date_of_birth"`
 	Status      string
+	Investments []InvestmentGorm `gorm:"many2many:customer_investments"`
 }
 
 func (c Customer) statusAsText() string {

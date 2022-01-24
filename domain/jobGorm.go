@@ -48,16 +48,6 @@ func (d JobRepositoryDbGorm) Save(job *JobGorm) (*JobGorm, *errs.AppError) {
 	}
 	return job, nil
 }
-func NewJobRepositoryDbGorm(dbClient *gorm.DB) JobRepositoryDbGorm {
-	return JobRepositoryDbGorm{dbClient}
-}
-
-func (job JobGorm) ToJobResponseGormDto() dto.JobResponseGorm {
-
-	return dto.JobResponseGorm{
-		ID: job.ID,
-	}
-}
 
 func (d JobRepositoryDbGorm) DeleteJob(job *JobGorm) (int64, *errs.AppError) {
 	result := d.Client.Unscoped().Delete(&JobGorm{}, job.Model.ID)
@@ -75,4 +65,15 @@ func (d JobRepositoryDbGorm) UpdateJob(job *JobGorm) (*JobGorm, *errs.AppError) 
 		return nil, errs.GormQueryError("Unexpected database error")
 	}
 	return job, nil
+}
+
+func NewJobRepositoryDbGorm(dbClient *gorm.DB) JobRepositoryDbGorm {
+	return JobRepositoryDbGorm{dbClient}
+}
+
+func (job JobGorm) ToJobResponseGormDto() dto.JobResponseGorm {
+
+	return dto.JobResponseGorm{
+		ID: job.ID,
+	}
 }
