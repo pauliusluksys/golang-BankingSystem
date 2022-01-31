@@ -94,26 +94,30 @@ func timezoneTask() {
 	router := mux.NewRouter()
 	//wiring
 
-	router.HandleFunc("/customers", ch.getAllCustomers).Methods(http.MethodGet).Name("GetAllCustomers")
-	router.HandleFunc("/customers/{customer_id:[0-9]+}/investments/create", ih.CustomerInvestmentCreate).Methods(http.MethodPost).Name("CreateCustomerInvestment")
-	router.HandleFunc("/customers/{customer_id:[0-9]+}/investments", ih.GetAllCustomerInvestments).Methods(http.MethodGet).Name("GetAllCustomerInvestments")
-	router.HandleFunc("/customers/{customer_id:[0-9]+}", ch.getCustomer).Methods(http.MethodGet).Name("GetCustomer")
-	router.HandleFunc("/customers/{customer_id:[0-9]+}/account", ah.NewAccount).Methods(http.MethodPost).Name("NewAccount")
-	router.HandleFunc("/customers/{customer_id:[0-9]+}/account/{account_id:[0-9]+}", ah.MakeTransaction).Methods(http.MethodPost).Name("NewTransaction")
-	router.HandleFunc("/career/career-at-seb", jh.GetAllJobs).Methods(http.MethodGet).Name("GetAllJobs")
-	router.HandleFunc("/career/career-at-seb/{job_id:[0-9]+}", jh.GetById).Methods(http.MethodGet).Name("JobById")
-	router.HandleFunc("/career/career-at-seb/new", jhgorm.NewJob).Methods(http.MethodPost).Name("NewJob")
-	router.HandleFunc("/career/career-at-seb/update", jhgorm.UpdateJob).Methods(http.MethodPost).Name("UpdateJob")
-	router.HandleFunc("/career/career-at-seb/delete", jhgorm.DeleteJob).Methods(http.MethodPost).Name("DeleteJob")
-	//router.HandleFunc("/customer/possible-investments", ihgorm.GetAllInvestments).Methods(http.MethodGet).Name("GetAllInvestments")
-	//router.HandleFunc("/customers/{customer_id:[0-9]+}/investments/create", ih.CustomerInvestmentCreate).Methods(http.MethodGet).Name("NewCustomerInvestment")
 	router.HandleFunc("/api/time", GetTime)
 
+	customers := router.PathPrefix("/customers").Subrouter()
+	customerById := customers.PathPrefix("/{customer_id:[0-9]+}").Subrouter()
 	investments := router.PathPrefix("/investments").Subrouter()
+	career := router.PathPrefix("/career").Subrouter()
+	customers.HandleFunc("", ch.getAllCustomers).Methods(http.MethodGet).Name("GetAllCustomers")
+
+	customerById.HandleFunc("/investments/create", ih.CustomerInvestmentCreate).Methods(http.MethodPost).Name("CreateCustomerInvestment")
+	customerById.HandleFunc("/investments", ih.GetAllCustomerInvestments).Methods(http.MethodGet).Name("GetAllCustomerInvestments")
+	customerById.HandleFunc("", ch.getCustomer).Methods(http.MethodGet).Name("GetCustomer")
+	customerById.HandleFunc("/account", ah.NewAccount).Methods(http.MethodPost).Name("NewAccount")
+	customerById.HandleFunc("/account/{account_id:[0-9]+}", ah.MakeTransaction).Methods(http.MethodPost).Name("NewTransaction")
+
 	investments.HandleFunc("/create", ihgorm.InvestmentsCreate).Methods(http.MethodPost).Name("InvestmentCreate")
 	investments.HandleFunc("/risk-level/create", ihgorm.InvestmentRiskLevelCreate).Methods(http.MethodPost).Name("InvestmentRiskLevelCreate")
 	investments.HandleFunc("/company/create", ihgorm.InvestmentCompanyCreate).Methods(http.MethodPost).Name("InvestmentCompanyCreate")
 	investments.HandleFunc("/category/create", ihgorm.InvestmentCategoryCreate).Methods(http.MethodPost).Name("InvestmentCategoryCreate")
+
+	career.HandleFunc("/career-at-seb", jh.GetAllJobs).Methods(http.MethodGet).Name("GetAllJobs")
+	career.HandleFunc("/career-at-seb/{job_id:[0-9]+}", jh.GetById).Methods(http.MethodGet).Name("JobById")
+	career.HandleFunc("/career-at-seb/new", jhgorm.NewJob).Methods(http.MethodPost).Name("NewJob")
+	career.HandleFunc("/career-at-seb/update", jhgorm.UpdateJob).Methods(http.MethodPost).Name("UpdateJob")
+	career.HandleFunc("/career-at-seb/delete", jhgorm.DeleteJob).Methods(http.MethodPost).Name("DeleteJob")
 
 	am := AuthMiddleware{domain.NewAuthRepository(getDbClient())}
 	router.Use(am.authorizationHandler())
