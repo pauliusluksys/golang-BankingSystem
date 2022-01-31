@@ -12,7 +12,7 @@ type AuthMiddleware struct {
 	repo domain.AuthRepository
 }
 
-var routesWithoutAuth = []string{"Welcome"}
+var routesWithoutAuth = []string{"Welcome", "InvestmentCreate", "InvestmentCompanyCreate", "InvestmentRiskLevelCreate", "InvestmentCategoryCreate", "CreateCustomerInvestment", "GetAllCustomerInvestments"}
 
 func (a AuthMiddleware) authorizationHandler() func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

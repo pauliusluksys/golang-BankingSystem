@@ -6,11 +6,19 @@ import (
 )
 
 type Customer struct {
-	Id          string `db:"customer_id"`
+	ID          uint   `db:"customer_id"`
+	Name        string `db:"name"`
+	City        string `db:"city"`
+	Zipcode     string `db:"zipcode"`
+	DateOfBirth string `db:"date_of_birth"`
+	Status      string `db:"status"`
+}
+type CustomerGorm struct {
+	ID          uint
 	Name        string
 	City        string
 	Zipcode     string
-	DateOfBirth string `db:"date_of_birth"`
+	DateOfBirth string
 	Status      string
 	Investments []InvestmentGorm `gorm:"many2many:customer_investments"`
 }
@@ -25,7 +33,7 @@ func (c Customer) statusAsText() string {
 func (c Customer) ToDto() dto.CustomerResponse {
 
 	return dto.CustomerResponse{
-		Id:          c.Id,
+		Id:          c.ID,
 		Name:        c.Name,
 		City:        c.City,
 		Zipcode:     c.Zipcode,

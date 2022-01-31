@@ -1,5 +1,7 @@
 package utils
 
+import "database/sql"
+
 //get keys from a map
 func GetKeys(m map[string]string) []string {
 	j := 0
@@ -18,4 +20,11 @@ func CleanMap(filterMap map[string]string) map[string]string {
 		}
 	}
 	return cleanMap
+}
+func TimeToString(time sql.NullTime) string {
+	if time.Valid == true {
+		return time.Time.String()
+	} else {
+		return ""
+	}
 }

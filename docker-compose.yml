@@ -1,0 +1,39 @@
+version: "3.1"
+
+services:
+  db:
+    image: mysql
+    restart: unless-stopped
+    env_file: .env_mysql_docker
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: api
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  elasticsearch:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:7.10.2'
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+volumes:
+  mysqldata:
+    driver: local
+  esdata:
+    driver: local

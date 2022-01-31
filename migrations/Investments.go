@@ -7,7 +7,7 @@ import (
 )
 
 func MigrateInvestments(db *gorm.DB) {
-	err := db.AutoMigrate(&domain.InvestmentCategory{}, &domain.InvestmentCompany{}, &domain.RiskLevel{}, &domain.InvestmentGorm{}, &domain.CustomerInvestment{})
+	err := db.AutoMigrate(&domain.CategoryInvestment{}, &domain.CompanyInvestment{}, &domain.RiskLevelInvestment{}, &domain.InvestmentGorm{}, &domain.CustomerInvestment{})
 	if err != nil {
 		fmt.Println("something went wrong with Gorm migration:   ", err)
 	}

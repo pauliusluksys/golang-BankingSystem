@@ -5,6 +5,8 @@
 *.so
 *.dylib
 *.env
+.env*
+.env_mysql_docker
 # Test binary, built with `go test -c`
 *.test
 

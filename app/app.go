@@ -1,8 +1,8 @@
 package app
 
 import (
+	"bankingV2/app/investmentHandler"
 	"bankingV2/domain"
-	"bankingV2/migrations"
 	"bankingV2/service"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -50,8 +50,7 @@ func Start() {
 	timezoneTask()
 }
 func getDbClient() *sqlx.DB {
-
-	dataSource := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", DbUser, DbPasswd, DbAddress, DbPort, DbName)
+	dataSource := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&loc=Local", DbUser, DbPasswd, DbAddress, DbPort, DbName)
 	client, err := sqlx.Open("mysql", dataSource)
 	if err != nil {
 		log.Println("FATAL ERROR SQL DOES NOT WORK PROPERLY")
@@ -64,34 +63,40 @@ func getDbClient() *sqlx.DB {
 }
 
 func timezoneTask() {
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", "admin", "password", "127.0.0.1", "3306", "banking")
-	//dsn := fmt.Sprintf(DbUser, ":", DbPasswd, "@tcp(", DbAddress, ":", DbPort, ")/", DbName, "?charset=utf8mb4&parseTime=True&loc=Local")
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&loc=Local", DbUser, DbPasswd, DbAddress, DbPort, DbName)
 	db, err := gorm.Open(driverMysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Println("FATAL ERROR Gorm SQL DOES NOT WORK PROPERLY")
 		panic(err)
 	}
 	//migrateAll(db)
-	migrations.MigrateInvestments(db)
-	router := mux.NewRouter()
-	//wiring
+	//migrations.MigrateInvestments(db)
 	dbClient := getDbClient()
 
 	customerRepositoryDb := domain.NewCustomerRepositoryDb(dbClient)
 	accountRepositoryDb := domain.NewAccountRepositoryDb(dbClient)
 	authRepositoryDb := domain.NewAuthRepository(dbClient)
 	jobRepositoryDb := domain.NewJobRepositoryDb(getDbClient())
+	InvestmentRepositoryDb := domain.NewInvestmentRepositoryDb(getDbClient())
 	jobRepositoryDbGorm := domain.NewJobRepositoryDbGorm(db)
 	InvestmentRepositoryDbGorm := domain.NewInvestmentRepositoryDbGorm(db)
+
 	jh := JobHandler{service.NewJobService(jobRepositoryDb)}
 	jhgorm := JobHandlerGorm{service.NewJobServiceGorm(jobRepositoryDbGorm)}
-	ihgorm := InvestmentHandlerGorm{service.NewInvestmentServiceGorm(InvestmentRepositoryDbGorm)}
+	//ihgorm := InvestmentHandlerGorm{service.NewInvestmentServiceGorm(InvestmentRepositoryDbGorm)}
 	ch := CustomerHandlers{service.NewCustomerService(customerRepositoryDb)}
 	ah := AccountHandler{service.NewAccountService(accountRepositoryDb)}
 	ach := AuthHandlers{service.NewLoginService(authRepositoryDb)}
+	ihgorm := investmentHandler.InvestmentHandlerGorm{S: service.NewInvestmentServiceGorm(InvestmentRepositoryDbGorm)}
+	ih := investmentHandler.InvestmentHandler{S: service.NewInvestmentService(InvestmentRepositoryDb)}
 	//define routes
+
+	router := mux.NewRouter()
+	//wiring
+
 	router.HandleFunc("/customers", ch.getAllCustomers).Methods(http.MethodGet).Name("GetAllCustomers")
+	router.HandleFunc("/customers/{customer_id:[0-9]+}/investments/create", ih.CustomerInvestmentCreate).Methods(http.MethodPost).Name("CreateCustomerInvestment")
+	router.HandleFunc("/customers/{customer_id:[0-9]+}/investments", ih.GetAllCustomerInvestments).Methods(http.MethodGet).Name("GetAllCustomerInvestments")
 	router.HandleFunc("/customers/{customer_id:[0-9]+}", ch.getCustomer).Methods(http.MethodGet).Name("GetCustomer")
 	router.HandleFunc("/customers/{customer_id:[0-9]+}/account", ah.NewAccount).Methods(http.MethodPost).Name("NewAccount")
 	router.HandleFunc("/customers/{customer_id:[0-9]+}/account/{account_id:[0-9]+}", ah.MakeTransaction).Methods(http.MethodPost).Name("NewTransaction")
@@ -100,8 +105,15 @@ func timezoneTask() {
 	router.HandleFunc("/career/career-at-seb/new", jhgorm.NewJob).Methods(http.MethodPost).Name("NewJob")
 	router.HandleFunc("/career/career-at-seb/update", jhgorm.UpdateJob).Methods(http.MethodPost).Name("UpdateJob")
 	router.HandleFunc("/career/career-at-seb/delete", jhgorm.DeleteJob).Methods(http.MethodPost).Name("DeleteJob")
-	router.HandleFunc("/customer/possible-investments", ihgorm.GetAllInvestments).Methods(http.MethodGet).Name("GetAllInvestments")
+	//router.HandleFunc("/customer/possible-investments", ihgorm.GetAllInvestments).Methods(http.MethodGet).Name("GetAllInvestments")
+	//router.HandleFunc("/customers/{customer_id:[0-9]+}/investments/create", ih.CustomerInvestmentCreate).Methods(http.MethodGet).Name("NewCustomerInvestment")
 	router.HandleFunc("/api/time", GetTime)
+
+	investments := router.PathPrefix("/investments").Subrouter()
+	investments.HandleFunc("/create", ihgorm.InvestmentsCreate).Methods(http.MethodPost).Name("InvestmentCreate")
+	investments.HandleFunc("/risk-level/create", ihgorm.InvestmentRiskLevelCreate).Methods(http.MethodPost).Name("InvestmentRiskLevelCreate")
+	investments.HandleFunc("/company/create", ihgorm.InvestmentCompanyCreate).Methods(http.MethodPost).Name("InvestmentCompanyCreate")
+	investments.HandleFunc("/category/create", ihgorm.InvestmentCategoryCreate).Methods(http.MethodPost).Name("InvestmentCategoryCreate")
 
 	am := AuthMiddleware{domain.NewAuthRepository(getDbClient())}
 	router.Use(am.authorizationHandler())
