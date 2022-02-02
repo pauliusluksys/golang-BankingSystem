@@ -35,7 +35,7 @@ func (d InvestmentRepositoryDb) ById(Id uint) (*Investment, *errs.AppError) {
 
 	var i Investment
 
-	findByIdSql := "select * from investment_gorms where id=?"
+	findByIdSql := "select * from investments where id=?"
 	err := d.Client.Get(&i, findByIdSql, Id)
 
 	if err != nil {
@@ -50,7 +50,7 @@ func (d InvestmentRepositoryDb) ById(Id uint) (*Investment, *errs.AppError) {
 }
 func (d InvestmentRepositoryDb) FindAllCustomerInvestmentsCount(customerID string) (*int, *errs.AppError) {
 	var cICount []CustomerInvestmentsCount
-	query := "SELECT COUNT(*) as total from investment_gorms ig inner join customer_investments ci on ig.id = ci.investment_id where ci.customer_id = ?;"
+	query := "SELECT COUNT(*) as total from investments ig inner join customer_investments ci on ig.id = ci.investment_id where ci.customer_id = ?;"
 	err := d.Client.Select(&cICount, query, customerID)
 	if err != nil {
 		logger.Error("Error while selecting customer investments count" + err.Error())
@@ -59,10 +59,22 @@ func (d InvestmentRepositoryDb) FindAllCustomerInvestmentsCount(customerID strin
 		return &cICount[0].Total, nil
 	}
 }
-func (d InvestmentRepositoryDb) FindAllCustomerInvestments(customerID string) ([]CustomerInvestment, *errs.AppError) {
+func (d InvestmentRepositoryDb) FindAllCustomerInvestments() ([]CustomerInvestment, *errs.AppError) {
 	var customerInvestments []CustomerInvestment
 
-	query := "SELECT ci.amount_invested, ci.is_withdrawn,ci.created_at as customer_investment_created_at, ig.id as investment_id,ig.created_at as investment_created_at,ig.updated_at as investment_updated_at,ig.deleted_at as investment_deleted_at,ig.title as investment_title,ig.category_investment_id,ig.company_investment_id,ig.risk_level_investment_id,ci3.name as company_name, ci4.name as category_name, rl.name as risk_level_name from investment_gorms ig inner join customer_investments ci on ig.id = ci.investment_id inner join company_investments ci3 ON ig.company_investment_id = ci3.id inner join category_investments ci4 ON ig.category_investment_id = ci4.id inner join risk_level_investments rl ON ig.risk_level_investment_id = rl.id where ci.customer_id = ?;"
+	query := "SELECT customer_id, ci.amount_invested, ci.is_withdrawn,ci.created_at as customer_investment_created_at, ig.id as investment_id,ig.created_at as investment_created_at,ig.updated_at as investment_updated_at,ig.deleted_at as investment_deleted_at,ig.title as investment_title,ig.category_investment_id,ig.company_investment_id,ig.risk_level_investment_id,ci3.name as company_name, ci4.name as category_name, rl.name as risk_level_name from investments ig inner join customer_investments ci on ig.id = ci.investment_id inner join company_investments ci3 ON ig.company_investment_id = ci3.id inner join category_investments ci4 ON ig.category_investment_id = ci4.id inner join risk_level_investments rl ON ig.risk_level_investment_id = rl.id ORDER BY customer_id asc;"
+	err := d.Client.Select(&customerInvestments, query)
+	if err != nil {
+		logger.Error("Error while selecting all cutomer invesments: " + err.Error())
+		return nil, errs.NewUnexpectError("unexpected database error")
+	} else {
+		return customerInvestments, nil
+	}
+}
+func (d InvestmentRepositoryDb) FindAllInvestmentsByCustomerId(customerID string) ([]CustomerInvestment, *errs.AppError) {
+	var customerInvestments []CustomerInvestment
+
+	query := "SELECT ci.amount_invested, ci.is_withdrawn,ci.created_at as customer_investment_created_at, ig.id as investment_id,ig.created_at as investment_created_at,ig.updated_at as investment_updated_at,ig.deleted_at as investment_deleted_at,ig.title as investment_title,ig.category_investment_id,ig.company_investment_id,ig.risk_level_investment_id,ci3.name as company_name, ci4.name as category_name, rl.name as risk_level_name from investments ig inner join customer_investments ci on ig.id = ci.investment_id inner join company_investments ci3 ON ig.company_investment_id = ci3.id inner join category_investments ci4 ON ig.category_investment_id = ci4.id inner join risk_level_investments rl ON ig.risk_level_investment_id = rl.id where ci.customer_id = ?;"
 	err := d.Client.Select(&customerInvestments, query, customerID)
 	if err != nil {
 		logger.Error("Error while selecting all cutomer invesments: " + err.Error())
@@ -79,13 +91,21 @@ func (d InvestmentRepositoryDb) CreateCustomerInvestment(ci CustomerInvestment) 
 	}
 	_, err = tx.Exec("INSERT INTO customer_investments (customer_id,investment_id,amount_invested,is_withdrawn,created_at)  values (?,?,?,?,?)", ci.CustomerID, ci.InvestmentID, ci.AmountInvested, ci.IsWithdrawn, ci.CustomerInvestmentCreatedAt)
 	if err != nil {
-		tx.Rollback()
+		err = tx.Rollback()
+		if err != nil {
+			fmt.Println("failed to rollback after execution error: ", err)
+		}
 		logger.Error("error while saving customer investment: " + err.Error())
 		return nil, errs.NewUnexpectError("Unexpected database error")
+
 	}
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
+		err := tx.Rollback()
+		if err != nil {
+			fmt.Println("failed to rollback after commit error: ", err)
+			return nil, errs.NewUnexpectError("Unexpected database error")
+		}
 		logger.Error("Error while commiting transaction for bank account: " + err.Error())
 		return nil, errs.NewUnexpectError("Unexpected database error")
 	}

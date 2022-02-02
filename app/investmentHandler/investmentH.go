@@ -25,6 +25,16 @@ func writeResponse(w http.ResponseWriter, code int, data interface{}) {
 		panic(err)
 	}
 }
+
+//func (ih InvestmentHandler) GetAllCustomersInvestments(w http.ResponseWriter, r *http.Request) {
+//	response, err := ih.S.GetAllCustomersInvestments()
+//	if err != nil {
+//		w.WriteHeader(http.StatusInternalServerError)
+//		fmt.Println(err)
+//	} else {
+//		writeResponse(w, http.StatusOK, response)
+//	}
+//}
 func (ih InvestmentHandler) GetAllCustomerInvestments(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	customerId := vars["customer_id"]

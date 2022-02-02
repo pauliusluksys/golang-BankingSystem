@@ -9,6 +9,9 @@ type NewCustomerInvestmentResponse struct {
 	CustomerName    string
 	InvestmentTitle string
 }
+type AllCustomersResponse struct {
+	Customers []AllCustomerInvestmentResponse
+}
 type AllCustomerInvestmentResponse struct {
 	UniqueInvestmentsCount     int `json:"unique_investments_count"`
 	CustomerInvestmentResponse []CustomerInvestmentResponse

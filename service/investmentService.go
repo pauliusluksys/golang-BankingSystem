@@ -12,6 +12,7 @@ import (
 type InvestmentService interface {
 	CreateCustomerInvestment(request DtoInvestment.NewCustomerInvestmentRequest) (*DtoInvestment.NewCustomerInvestmentResponse, *errs.AppError)
 	GetAllCustomerInvestments(customerID string) (*DtoInvestment.AllCustomerInvestmentResponse, *errs.AppError)
+	//GetAllCustomersInvestments() (*DtoInvestment.AllCustomersResponse, *errs.AppError)
 }
 type DefaultInvestmentService struct {
 	repo domain.InvestmentRepositoryDb
@@ -36,9 +37,24 @@ type DefaultInvestmentServiceGorm struct {
 func NewInvestmentServiceGorm(repo domain.InvestmentRepositoryDbGorm) DefaultInvestmentServiceGorm {
 	return DefaultInvestmentServiceGorm{repo}
 }
-func (s DefaultInvestmentService) GetAllCustomerInvestments(customerID string) (*DtoInvestment.AllCustomerInvestmentResponse, *errs.AppError) {
-	customerInvestments, err := s.repo.FindAllCustomerInvestments(customerID)
-	customerInvestmentsCount, err := s.repo.FindAllCustomerInvestmentsCount(customerID)
+
+//func (S DefaultInvestmentService) GetAllCustomersInvestments() (*DtoInvestment.AllCustomersResponse, *errs.AppError) {
+//	customersInvestments, err := S.repo.FindAllCustomerInvestments()
+//	if err != nil {
+//		return nil, err
+//	} else {
+//
+//		for key, index := range customersInvestments {
+//			customersInvestments.
+//		}
+//
+//		return DtoInvestment.AllCustomersResponse, nil
+//	}
+//
+//}
+func (S DefaultInvestmentService) GetAllCustomerInvestments(customerID string) (*DtoInvestment.AllCustomerInvestmentResponse, *errs.AppError) {
+	customerInvestments, err := S.repo.FindAllInvestmentsByCustomerId(customerID)
+	customerInvestmentsCount, err := S.repo.FindAllCustomerInvestmentsCount(customerID)
 	var cIResponseSlice []DtoInvestment.CustomerInvestmentResponse
 	if err != nil {
 		return nil, err

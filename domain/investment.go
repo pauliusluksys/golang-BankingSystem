@@ -133,3 +133,15 @@ func (cI CustomerInvestment) CustomerInvestmentsToDto() DtoInvestment.CustomerIn
 		//RiskLevelName:               cI.RiskLevelName.String,
 	}
 }
+func OverwriteTableNameInvestments() {
+
+	_ = InvestmentGorm.TableName
+}
+
+type Tabler interface {
+	TableName() string
+}
+
+func (InvestmentGorm) TableName() string {
+	return "investments"
+}
