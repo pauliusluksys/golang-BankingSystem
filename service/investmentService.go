@@ -6,13 +6,14 @@ import (
 	"bankingV2/dto/DtoInvestment"
 	"bankingV2/errs"
 	"database/sql"
+	"fmt"
 	"time"
 )
 
 type InvestmentService interface {
 	CreateCustomerInvestment(request DtoInvestment.NewCustomerInvestmentRequest) (*DtoInvestment.NewCustomerInvestmentResponse, *errs.AppError)
 	GetAllCustomerInvestments(customerID string) (*DtoInvestment.AllCustomerInvestmentResponse, *errs.AppError)
-	//GetAllCustomersInvestments() (*DtoInvestment.AllCustomersResponse, *errs.AppError)
+	GetAllCustomersInvestments(offset string, quantity string) (*[]DtoInvestment.ByCustomerResponse, *errs.AppError)
 }
 type DefaultInvestmentService struct {
 	repo domain.InvestmentRepositoryDb
@@ -38,20 +39,100 @@ func NewInvestmentServiceGorm(repo domain.InvestmentRepositoryDbGorm) DefaultInv
 	return DefaultInvestmentServiceGorm{repo}
 }
 
-//func (S DefaultInvestmentService) GetAllCustomersInvestments() (*DtoInvestment.AllCustomersResponse, *errs.AppError) {
-//	customersInvestments, err := S.repo.FindAllCustomerInvestments()
-//	if err != nil {
-//		return nil, err
-//	} else {
-//
-//		for key, index := range customersInvestments {
-//			customersInvestments.
-//		}
-//
-//		return DtoInvestment.AllCustomersResponse, nil
-//	}
-//
-//}
+func (S DefaultInvestmentService) GetAllCustomersInvestments(offset string, quantity string) (*[]DtoInvestment.ByCustomerResponse, *errs.AppError) {
+	var cIByCustomer []DtoInvestment.ByCustomerResponse
+	var cIByInvestment []DtoInvestment.ByInvestmentResponse
+	var byInvestment DtoInvestment.ByInvestmentResponse
+	var byCustomer DtoInvestment.ByCustomerResponse
+	var cITotal = 0
+	var fullAmountInvested = 0
+	var cILastCreated time.Time
+
+	customersInvestments, err := S.repo.FindAllCustomersInvestments(offset, quantity)
+
+	var lastInvestmentKey = len(customersInvestments) - 1
+
+	if err != nil {
+		return nil, err
+	} else {
+		for key, index := range customersInvestments {
+			cIResponse := index.CustomersInvestmentsToDto()
+			fmt.Println(key)
+			if key == 0 {
+				cITotal = 1
+				cILastCreated = index.CustomerInvestmentCreatedAt.Time
+				fullAmountInvested = int(index.InvestedAmount)
+				byIResponse := index.ByInvestmentToDto()
+
+				byInvestment = byIResponse
+				byInvestment.CustomerInvestmentResponse = append(byInvestment.CustomerInvestmentResponse, cIResponse)
+
+			} else {
+				if (customersInvestments[key].InvestmentID == customersInvestments[key-1].InvestmentID) && (customersInvestments[key].CustomerID == customersInvestments[key-1].CustomerID) {
+
+					if cILastCreated.Before(index.CustomerInvestmentCreatedAt.Time) {
+						cILastCreated = index.CustomerInvestmentCreatedAt.Time
+					}
+					cITotal++
+					fullAmountInvested = fullAmountInvested + int(index.InvestedAmount)
+
+					byInvestment.CustomerInvestmentResponse = append(byInvestment.CustomerInvestmentResponse, cIResponse)
+				} else if (customersInvestments[key].InvestmentID != customersInvestments[key-1].InvestmentID) && (customersInvestments[key].CustomerID == customersInvestments[key-1].CustomerID) {
+					fmt.Println("after else:", index.InvestmentID)
+					cILastCreated = index.CustomerInvestmentCreatedAt.Time
+					byInvestment.TotalInvestments = cITotal
+					byInvestment.FullAmountInvested = fullAmountInvested
+					cITotal = 1
+					fullAmountInvested = int(index.InvestedAmount)
+
+					cIByInvestment = append(cIByInvestment, byInvestment)
+					byInvestment.CustomerInvestmentResponse = nil
+					byIResponse := customersInvestments[key-1].ByInvestmentToDto()
+					byInvestment = byIResponse
+					byInvestment.CustomerInvestmentResponse = append(byInvestment.CustomerInvestmentResponse, cIResponse)
+				} else if customersInvestments[key].CustomerID != customersInvestments[key-1].CustomerID {
+
+					cILastCreated = index.CustomerInvestmentCreatedAt.Time
+					byInvestment.TotalInvestments = cITotal
+					byInvestment.FullAmountInvested = fullAmountInvested
+					cITotal = 1
+					fullAmountInvested = int(index.InvestedAmount)
+
+					cIByInvestment = append(cIByInvestment, byInvestment)
+					byCustomer = customersInvestments[key-1].ByCustomerToDto()
+					byCustomer.ByInvestmentResponse = cIByInvestment
+					cIByCustomer = append(cIByCustomer, byCustomer)
+					cIByInvestment = nil
+					byCustomer.ByInvestmentResponse = nil
+					byInvestment.CustomerInvestmentResponse = nil
+
+					byInvestment.CustomerInvestmentResponse = append(byInvestment.CustomerInvestmentResponse, cIResponse)
+				}
+			}
+			byInvestment.CustomerInvestmentLastCreated = cILastCreated.String()
+			if key == lastInvestmentKey {
+				if !(customersInvestments[key].InvestmentID == customersInvestments[key-1].InvestmentID) && (customersInvestments[key].CustomerID == customersInvestments[key-1].CustomerID) {
+					if cILastCreated.Before(index.CustomerInvestmentCreatedAt.Time) {
+						cILastCreated = index.CustomerInvestmentCreatedAt.Time
+						fullAmountInvested = fullAmountInvested + int(index.InvestedAmount)
+					}
+				}
+
+				cILastCreated = index.CustomerInvestmentCreatedAt.Time
+				byInvestment.TotalInvestments = cITotal
+				cITotal = 1
+				byInvestment.FullAmountInvested = fullAmountInvested
+				cIByInvestment = append(cIByInvestment, byInvestment)
+				byCustomer = index.ByCustomerToDto()
+				byCustomer.ByInvestmentResponse = cIByInvestment
+				cIByCustomer = append(cIByCustomer, byCustomer)
+
+			}
+		}
+	}
+	return &cIByCustomer, nil
+}
+
 func (S DefaultInvestmentService) GetAllCustomerInvestments(customerID string) (*DtoInvestment.AllCustomerInvestmentResponse, *errs.AppError) {
 	customerInvestments, err := S.repo.FindAllInvestmentsByCustomerId(customerID)
 	customerInvestmentsCount, err := S.repo.FindAllCustomerInvestmentsCount(customerID)
@@ -61,7 +142,7 @@ func (S DefaultInvestmentService) GetAllCustomerInvestments(customerID string) (
 	} else {
 		for _, cI := range customerInvestments {
 
-			cIResponse := cI.CustomerInvestmentsToDto()
+			cIResponse := cI.CustomersInvestmentsToDto()
 			cIResponseSlice = append(cIResponseSlice, cIResponse)
 		}
 		AllCIResponse := DtoInvestment.AllCustomerInvestmentResponse{*customerInvestmentsCount, cIResponseSlice}
@@ -73,8 +154,8 @@ func (s DefaultInvestmentService) CreateCustomerInvestment(request DtoInvestment
 	customerInvestment := domain.CustomerInvestment{
 		CustomerID:                  request.CustomerID,
 		InvestmentID:                request.InvestmentID,
-		AmountInvested:              request.AmountInvested,
-		IsWithdrawn:                 request.IsWithdrawn,
+		InvestedAmount:              request.AmountInvested,
+		WithdrawnState:              request.IsWithdrawn,
 		CustomerInvestmentCreatedAt: sql.NullTime{timeVal, true},
 	}
 	ci, err := s.repo.CreateCustomerInvestment(customerInvestment)

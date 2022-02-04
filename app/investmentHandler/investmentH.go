@@ -35,6 +35,16 @@ func writeResponse(w http.ResponseWriter, code int, data interface{}) {
 //		writeResponse(w, http.StatusOK, response)
 //	}
 //}
+func (ih InvestmentHandler) GetAllCustomersInvestments(w http.ResponseWriter, r *http.Request) {
+	offset := r.URL.Query().Get("offset")
+	quantity := r.URL.Query().Get("quantity")
+	fmt.Println(offset, quantity)
+	fmt.Println("hello therere")
+	//var cIByInvestment []DtoInvestment.ByInvestment
+	cIByInvestment, _ := ih.S.GetAllCustomersInvestments(offset, quantity)
+
+	writeResponse(w, http.StatusOK, &cIByInvestment)
+}
 func (ih InvestmentHandler) GetAllCustomerInvestments(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	customerId := vars["customer_id"]

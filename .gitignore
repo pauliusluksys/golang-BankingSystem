@@ -7,7 +7,7 @@
 *.env
 .env*
 .env_mysql_docker
-elasticsearch-7.16.3-amd64.deb.sha512
+elasticsearch-7.16.3-amd64.deb
 elasticsearch-7.16.3-amd64.deb
 # Test binary, built with `go test -c`
 *.test

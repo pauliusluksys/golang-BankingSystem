@@ -99,13 +99,15 @@ func timezoneTask() {
 	//wiring
 
 	router.HandleFunc("/api/time", GetTime)
-	//admin := router.PathPrefix("/admin").Subrouter()
+	admin := router.PathPrefix("/admin").Subrouter()
 	customers := router.PathPrefix("/customers").Subrouter()
 	customerById := customers.PathPrefix("/{customer_id:[0-9]+}").Subrouter()
 	investments := router.PathPrefix("/investments").Subrouter()
 	career := router.PathPrefix("/career").Subrouter()
 	customers.HandleFunc("", ch.getAllCustomers).Methods(http.MethodGet).Name("GetAllCustomers")
-	//admin.HandleFunc("customers/investments", ih.GetAllCustomersInvestments).Methods(http.MethodGet).Name("GetAllCustomersInvestments")
+
+	admin.HandleFunc("/customers/investments", ih.GetAllCustomersInvestments).Methods(http.MethodGet).Name("GetAllCustomersInvestments")
+
 	customerById.HandleFunc("/investments/create", ih.CustomerInvestmentCreate).Methods(http.MethodPost).Name("CreateCustomerInvestment")
 	customerById.HandleFunc("/investments", ih.GetAllCustomerInvestments).Methods(http.MethodGet).Name("GetAllCustomerInvestments")
 	customerById.HandleFunc("", ch.getCustomer).Methods(http.MethodGet).Name("GetCustomer")

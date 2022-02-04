@@ -13,9 +13,9 @@ type NewInvestmentRequest struct {
 }
 type NewCustomerInvestmentRequest struct {
 	CustomerID     uint
-	InvestmentID   uint `json:"investment_id"`
-	AmountInvested uint `json:"amount_invested"`
-	IsWithdrawn    bool `json:"is_withdrawn"`
+	InvestmentID   uint   `json:"investment_id"`
+	AmountInvested uint   `json:"amount_invested"`
+	IsWithdrawn    string `json:"is_withdrawn"`
 }
 
 type NewInvestmentResponse struct {

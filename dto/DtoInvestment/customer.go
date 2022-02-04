@@ -4,7 +4,7 @@ type NewCustomerInvestmentResponse struct {
 	CustomerID      uint `json:"customer_id"`
 	InvestmentID    uint `json:"investment_id"`
 	AmountInvested  uint
-	IsWithdrawn     bool
+	IsWithdrawn     string
 	CreatedAt       string
 	CustomerName    string
 	InvestmentTitle string
@@ -18,7 +18,7 @@ type AllCustomerInvestmentResponse struct {
 }
 type CustomerInvestmentResponse struct {
 	AmountInvested              uint   `json:"amount_invested"`
-	IsWithdrawn                 bool   `json:"is_withdrawn"`
+	IsWithdrawn                 string `json:"is_withdrawn"`
 	CustomerInvestmentCreatedAt string `json:"customer_investment_created_at,omitempty"`
 	InvestmentID                uint   `json:"investment_id"`
 	InvestmentCreatedAt         string `json:"created_at"`
@@ -31,6 +31,24 @@ type CustomerInvestmentResponse struct {
 	CompanyName                 string `json:"company_name"`
 	CategoryName                string `json:"category_name"`
 	RiskLevelName               string `json:"risk_level_name"`
+}
+type ByInvestmentResponse struct {
+	InvestmentId                  uint   `json:"investment_id"`
+	InvestmentTitle               string `json:"investment_title"`
+	InvestmentCreatedAt           string `json:"created_at"`
+	InvestmentUpdatedAt           string `json:"updated_at"`
+	InvestmentCompanyName         string `json:"company_name"`
+	InvestmentCategoryName        string `json:"category_name"`
+	InvestmentRiskLevel           string `json:"risk_level_name"`
+	CustomerInvestmentLastCreated string `json:"last_made_investment_at"`
+	TotalInvestments              int    `json:"total_investments"`
+	FullAmountInvested            int    `json:"full_amount_invested"`
+	CustomerInvestmentResponse    []CustomerInvestmentResponse
+}
+type ByCustomerResponse struct {
+	CustomerId           uint   `json:"customer_id"`
+	CustomerName         string `json:"customer_name"`
+	ByInvestmentResponse []ByInvestmentResponse
 }
 
 //type OneCustomerInvestmentResponse struct {

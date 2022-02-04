@@ -43,12 +43,12 @@ type RiskLevelInvestment struct {
 }
 type CustomerInvestment struct {
 	CustomerID                  uint           `db:"customer_id"`
+	CustomerName                sql.NullString `db:"customer_name"`
 	InvestmentID                uint           `db:"investment_id"`
-	AmountInvested              uint           `db:"amount_invested"`
-	IsWithdrawn                 bool           `db:"is_withdrawn"`
+	InvestedAmount              uint           `db:"invested_amount"`
+	WithdrawnState              string         `db:"withdrawn_state"`
 	CustomerInvestmentCreatedAt sql.NullTime   `db:"customer_investment_created_at"`
 	CustomerInvestmentDeletedAt sql.NullTime   `db:"customer_investment_deleted_at"`
-	CustomerName                sql.NullString `db:"customer_name"`
 	InvestmentTitle             string         `db:"investment_title"`
 	CategoryInvestmentID        sql.NullInt64  `db:"category_investment_id"`
 	CompanyInvestmentID         sql.NullInt64  `db:"company_investment_id"`
@@ -68,8 +68,8 @@ func (ci CustomerInvestment) NewCustomerInvestmentToDto() DtoInvestment.NewCusto
 	return DtoInvestment.NewCustomerInvestmentResponse{
 		ci.InvestmentID,
 		ci.InvestmentID,
-		ci.AmountInvested,
-		ci.IsWithdrawn,
+		ci.InvestedAmount,
+		ci.WithdrawnState,
 		ci.CustomerInvestmentCreatedAt.Time.String(),
 		ci.CustomerName.String,
 		ci.InvestmentTitle,
@@ -95,15 +95,35 @@ func (company CompanyInvestment) NewCompanyToDto() DtoInvestment.NewCompanyRespo
 		ID: company.ID,
 	}
 }
-func (cI CustomerInvestment) CustomerInvestmentsToDto() DtoInvestment.CustomerInvestmentResponse {
+func (cI CustomerInvestment) ByCustomerToDto() DtoInvestment.ByCustomerResponse {
+	return DtoInvestment.ByCustomerResponse{
+		CustomerId:   cI.CustomerID,
+		CustomerName: cI.CustomerName.String,
+	}
+}
+func (cI CustomerInvestment) ByInvestmentToDto() DtoInvestment.ByInvestmentResponse {
+	cInvCreatedAt := utils.TimeToString(cI.InvestmentCreatedAt)
+	InvUpdatedAt := utils.TimeToString(cI.InvestmentUpdatedAt)
+	return DtoInvestment.ByInvestmentResponse{
+		InvestmentId:           cI.InvestmentID,
+		InvestmentTitle:        cI.InvestmentTitle,
+		InvestmentCategoryName: cI.CategoryName.String,
+		InvestmentCompanyName:  cI.CompanyName.String,
+		InvestmentRiskLevel:    cI.RiskLevelName.String,
+		InvestmentCreatedAt:    cInvCreatedAt,
+		InvestmentUpdatedAt:    InvUpdatedAt,
+	}
+}
+func (cI CustomerInvestment) CustomersInvestmentsToDto() DtoInvestment.CustomerInvestmentResponse {
 	cInvCreatedAt := utils.TimeToString(cI.CustomerInvestmentCreatedAt)
 	InvCreatedAt := utils.TimeToString(cI.InvestmentCreatedAt)
 	InvUpdatedAt := utils.TimeToString(cI.InvestmentUpdatedAt)
 	InvDeletedAt := utils.TimeToString(cI.InvestmentDeletedAt)
 
 	return DtoInvestment.CustomerInvestmentResponse{
-		AmountInvested:              cI.AmountInvested,
-		IsWithdrawn:                 cI.IsWithdrawn,
+
+		AmountInvested:              cI.InvestedAmount,
+		IsWithdrawn:                 cI.WithdrawnState,
 		CustomerInvestmentCreatedAt: cInvCreatedAt,
 		InvestmentID:                cI.InvestmentID,
 		InvestmentCreatedAt:         InvCreatedAt,

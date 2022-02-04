@@ -59,15 +59,16 @@ func (d InvestmentRepositoryDb) FindAllCustomerInvestmentsCount(customerID strin
 		return &cICount[0].Total, nil
 	}
 }
-func (d InvestmentRepositoryDb) FindAllCustomerInvestments() ([]CustomerInvestment, *errs.AppError) {
+func (d InvestmentRepositoryDb) FindAllCustomersInvestments(offset string, quantity string) ([]CustomerInvestment, *errs.AppError) {
 	var customerInvestments []CustomerInvestment
-
-	query := "SELECT customer_id, ci.amount_invested, ci.is_withdrawn,ci.created_at as customer_investment_created_at, ig.id as investment_id,ig.created_at as investment_created_at,ig.updated_at as investment_updated_at,ig.deleted_at as investment_deleted_at,ig.title as investment_title,ig.category_investment_id,ig.company_investment_id,ig.risk_level_investment_id,ci3.name as company_name, ci4.name as category_name, rl.name as risk_level_name from investments ig inner join customer_investments ci on ig.id = ci.investment_id inner join company_investments ci3 ON ig.company_investment_id = ci3.id inner join category_investments ci4 ON ig.category_investment_id = ci4.id inner join risk_level_investments rl ON ig.risk_level_investment_id = rl.id ORDER BY customer_id asc;"
-	err := d.Client.Select(&customerInvestments, query)
+	query := "SELECT ci.customer_id , c.name as customer_name , ci.invested_amount, ci.withdrawn_state,ci.created_at as customer_investment_created_at, ig.id as investment_id,ig.created_at as investment_created_at,ig.updated_at as investment_updated_at,ig.deleted_at as investment_deleted_at,ig.title as investment_title,ig.category_investment_id,ig.company_investment_id,ig.risk_level_investment_id,ci3.name as company_name, ci4.name as category_name, rl.name as risk_level_name from investments ig inner join customer_investment ci on ig.id = ci.investment_id inner join customers c on ci.customer_id = c.customer_id inner join company_investments ci3 ON ig.company_investment_id = ci3.id inner join category_investments ci4 ON ig.category_investment_id = ci4.id inner join risk_level_investments rl ON ig.risk_level_investment_id = rl.id ORDER BY customer_name,customer_id,investment_id asc limit ?,?;"
+	err := d.Client.Select(&customerInvestments, query, offset, quantity)
 	if err != nil {
-		logger.Error("Error while selecting all cutomer invesments: " + err.Error())
+		logger.Error("Error while selecting all customer investments: " + err.Error())
 		return nil, errs.NewUnexpectError("unexpected database error")
 	} else {
+		fmt.Println("hello")
+		fmt.Println(customerInvestments[0].InvestmentID, len(customerInvestments))
 		return customerInvestments, nil
 	}
 }
@@ -77,7 +78,7 @@ func (d InvestmentRepositoryDb) FindAllInvestmentsByCustomerId(customerID string
 	query := "SELECT ci.amount_invested, ci.is_withdrawn,ci.created_at as customer_investment_created_at, ig.id as investment_id,ig.created_at as investment_created_at,ig.updated_at as investment_updated_at,ig.deleted_at as investment_deleted_at,ig.title as investment_title,ig.category_investment_id,ig.company_investment_id,ig.risk_level_investment_id,ci3.name as company_name, ci4.name as category_name, rl.name as risk_level_name from investments ig inner join customer_investments ci on ig.id = ci.investment_id inner join company_investments ci3 ON ig.company_investment_id = ci3.id inner join category_investments ci4 ON ig.category_investment_id = ci4.id inner join risk_level_investments rl ON ig.risk_level_investment_id = rl.id where ci.customer_id = ?;"
 	err := d.Client.Select(&customerInvestments, query, customerID)
 	if err != nil {
-		logger.Error("Error while selecting all cutomer invesments: " + err.Error())
+		logger.Error("Error while selecting all customer investments by id: " + err.Error())
 		return nil, errs.NewUnexpectError("unexpected database error")
 	} else {
 		return customerInvestments, nil
@@ -89,7 +90,7 @@ func (d InvestmentRepositoryDb) CreateCustomerInvestment(ci CustomerInvestment) 
 		logger.Error("Error while creating customer investment: " + err.Error())
 		return nil, errs.NewUnexpectError("Unexpected database error")
 	}
-	_, err = tx.Exec("INSERT INTO customer_investments (customer_id,investment_id,amount_invested,is_withdrawn,created_at)  values (?,?,?,?,?)", ci.CustomerID, ci.InvestmentID, ci.AmountInvested, ci.IsWithdrawn, ci.CustomerInvestmentCreatedAt)
+	_, err = tx.Exec("INSERT INTO customer_investments (customer_id,investment_id,amount_invested,is_withdrawn,created_at)  values (?,?,?,?,?)", ci.CustomerID, ci.InvestmentID, ci.InvestedAmount, ci.WithdrawnState, ci.CustomerInvestmentCreatedAt)
 	if err != nil {
 		err = tx.Rollback()
 		if err != nil {
